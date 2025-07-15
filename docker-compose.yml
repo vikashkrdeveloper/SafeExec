@@ -1,0 +1,177 @@
+# RCE Backend - Unified Docker Configuration
+# Controlled by ENV variable (development|test|production)
+# Features automatic port allocation if ports are busy
+# Usage:
+#   Development: ENV=development docker compose up
+#   Testing:     ENV=test docker compose up
+#   Production:  ENV=production docker compose up
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7-jammy
+    container_name: rce-mongodb-${ENV:-development}
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-devpassword}
+      MONGO_INITDB_DATABASE: ${MONGO_DB:-rce_system}
+    ports:
+      # Auto-allocate ports if default is busy
+      - '${MONGO_PORT:-27017}:27017'
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - rce-network
+    healthcheck:
+      test: ['CMD', 'mongosh', '--eval', "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: rce-redis-${ENV:-development}
+    restart: unless-stopped
+    ports:
+      # Auto-allocate ports if default is busy
+      - '${REDIS_PORT:-6379}:6379'
+    volumes:
+      - redis_data:/data
+    networks:
+      - rce-network
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    command: >
+      sh -c "
+        if [ '${ENV:-development}' = 'production' ] && [ -n '${REDIS_PASSWORD}' ]; then
+          redis-server --requirepass ${REDIS_PASSWORD}
+        else
+          redis-server
+        fi
+      "
+
+  # Main RCE API Application
+  rce-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: ${ENV:-development}
+    container_name: rce-api-${ENV:-development}
+    restart: unless-stopped
+    ports:
+      # Auto-allocate ports if default is busy
+      - '${API_PORT:-5000}:5000'
+      - '${DEBUG_PORT:-9229}:9229'
+    environment:
+      NODE_ENV: ${ENV:-development}
+      PORT: 5000
+      MONGODB_URI: mongodb://${MONGO_USERNAME:-admin}:${MONGO_PASSWORD:-devpassword}@mongodb:27017/${MONGO_DB:-rce_system}?authSource=admin
+      REDIS_URI: redis://${REDIS_PASSWORD:+:${REDIS_PASSWORD}@}redis:6379
+      JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret-change-in-production}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
+      DOCKER_HOST: /var/run/docker.sock
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
+      SWAGGER_UI_ENABLED: ${SWAGGER_UI_ENABLED:-true}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - app_logs:/app/logs
+      # Development: Source code mounting disabled due to path with spaces
+      # For development, rebuild the image after code changes using yarn docker:dev:build
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - rce-network
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:5000/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    command: >
+      sh -c "
+        if [ '${ENV:-development}' = 'development' ]; then
+          yarn dev
+        elif [ '${ENV:-development}' = 'test' ]; then
+          yarn test
+        else
+          yarn start
+        fi
+      "
+
+  # Queue Worker (Production and Development)
+  rce-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: ${ENV:-development}
+    container_name: rce-worker-${ENV:-development}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${ENV:-development}
+      MONGODB_URI: mongodb://${MONGO_USERNAME:-admin}:${MONGO_PASSWORD:-devpassword}@mongodb:27017/${MONGO_DB:-rce_system}?authSource=admin
+      REDIS_URI: redis://${REDIS_PASSWORD:+:${REDIS_PASSWORD}@}redis:6379
+      JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret-change-in-production}
+      DOCKER_HOST: /var/run/docker.sock
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - app_logs:/app/logs
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - rce-network
+    command: yarn worker
+    deploy:
+      replicas: ${WORKER_REPLICAS:-1}
+
+  # Nginx Reverse Proxy
+  nginx:
+    build:
+      context: .
+      dockerfile: docker/nginx/Dockerfile
+    container_name: rce-nginx-${ENV:-development}
+    restart: unless-stopped
+    ports:
+      # Auto-allocate ports if default is busy
+      - '${NGINX_HTTP_PORT:-80}:80'
+      - '${NGINX_HTTPS_PORT:-443}:443'
+    depends_on:
+      - rce-api
+    networks:
+      - rce-network
+    environment:
+      - NGINX_ENV=${ENV:-development}
+      - BACKEND_HOST=rce-api
+      - BACKEND_PORT=5000
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  rce-network:
+    driver: bridge
+    name: rce-network-${ENV:-development}
+
+volumes:
+  mongodb_data:
+    driver: local
+    name: rce-mongodb-data-${ENV:-development}
+  redis_data:
+    driver: local
+    name: rce-redis-data-${ENV:-development}
+  app_logs:
+    driver: local
+    name: rce-app-logs-${ENV:-development}

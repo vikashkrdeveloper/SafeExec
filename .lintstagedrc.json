@@ -1,0 +1,14 @@
+{
+  "src/**/*.{ts,tsx,js,jsx}": [
+    "eslint --fix --max-warnings=0",
+    "prettier --write"
+  ],
+  "tests/**/*.{ts,tsx,js,jsx}": [
+    "eslint --fix --max-warnings=0",
+    "prettier --write"
+  ],
+  "*.{json,md,yml,yaml}": ["prettier --write"],
+  "src/**/*.{ts,tsx}": ["tsc --noEmit"],
+  "tests/**/*.{ts,tsx}": ["tsc --noEmit"],
+  "package.json": ["yarn audit --level moderate"]
+}

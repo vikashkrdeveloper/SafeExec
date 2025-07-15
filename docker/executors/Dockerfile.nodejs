@@ -1,0 +1,31 @@
+# Node.js 20 Executor
+FROM node:20-alpine
+
+# Security: Create non-root user
+RUN adduser -D -s /bin/sh coderunner
+
+# Install essential packages
+RUN npm install -g \
+    lodash \
+    moment \
+    axios \
+    && npm cache clean --force
+
+# Set working directory
+WORKDIR /app
+
+# Copy execution script
+COPY run_nodejs.js /app/
+RUN chmod +x /app/run_nodejs.js
+
+# Security configurations
+RUN chown -R coderunner:coderunner /app
+
+# Switch to non-root user
+USER coderunner
+
+# Set resource limits
+ENV NODE_OPTIONS="--max-old-space-size=128"
+ENV EXECUTION_TIMEOUT=5
+
+CMD ["node", "/app/run_nodejs.js"]
