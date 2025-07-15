@@ -19,9 +19,21 @@
 
 ---
 
-## 🧑‍💻 **Contributor Quick Start**
+## 🚀 Quick Start
 
-> **We love contributors!** Follow these steps to get started quickly:
+### Prerequisites
+
+- **Node.js 18+** and **Yarn** package manager
+- **Docker & Docker Compose** (latest versions)
+- **Git** for version control
+- **MongoDB** (handled by Docker Compose)
+- **Redis** (handled by Docker Compose)
+
+## 🟢 **Contributor Quick Setup**
+
+> **We love contributors!**
+>
+> **Follow these steps to get started quickly as a contributor:**
 
 ### 1. Fork & Clone the Repository
 
@@ -30,45 +42,174 @@
 git clone https://github.com/YOUR_USERNAME/SafeExec.git
 cd SafeExec
 
+# Add upstream remote for syncing
 git remote add upstream https://github.com/vikashkrdeveloper/SafeExec.git
 ```
 
-### 2. Quick Local Setup (Recommended)
+### 2. Quick Setup (Recommended for Contributors)
 
 ```bash
+# Complete development setup in one command
 yarn setup:dev
-# Installs dependencies, builds Docker executors, starts dev environment, seeds DB
+
+# This command will:
+# - Install all dependencies
+# - Build Docker executor containers
+# - Start development environment with Docker
+# - Seed database with sample data
 ```
 
 ### 3. Manual Setup (Step by Step)
 
+**3.1. Install Dependencies & Build Executors**
+
 ```bash
 yarn setup
-cp .env.example .env
-# Edit .env as needed
-
-yarn docker:setup:dev
-# Or: yarn dev (if running MongoDB/Redis locally)
+# Equivalent to: yarn install && yarn build:executors
 ```
 
-### 4. Verify Setup
+**3.2. Environment Configuration**
 
 ```bash
-yarn docker:status
-yarn health
+# Copy environment template
+cp .env.example .env
+
+# Edit the .env file with your local configuration
+nano .env  # or use your preferred editor
 ```
 
-### 5. Start Contributing!
+**Sample .env for local development:**
 
-- Create a feature branch: `git checkout -b feature/your-feature`
-- Make your changes and add tests
-- Run checks: `yarn test && yarn lint && yarn typecheck`
-- Commit and push: `git commit -m "feat: your change" && git push`
-- Open a Pull Request on GitHub
+```env
+NODE_ENV=development
+PORT=5000
+MONGO_URI=mongodb://localhost:27017/rce_dev
+REDIS_HOST=localhost
+REDIS_PORT=6379
+JWT_SECRET=your-super-secret-jwt-key-for-development
+JWT_EXPIRES_IN=24h
+```
+
+**3.3. Start Development Environment**
+
+```bash
+# Start all services: API, MongoDB, Redis, Nginx
+yarn docker:setup:dev
+
+# Or start services individually
+yarn docker:dev:build    # Build containers
+yarn docker:dev          # Start all services
+yarn docker:seed:dev     # Seed database with sample data
+
+yarn dev                 # API only (requires local MongoDB/Redis)
+```
+
+**3.4. Verify Setup**
+
+```bash
+# Check all services are running
+yarn docker:status
+
+# Check API health
+yarn health
+# Or manually: curl -f http://localhost:5000/health
+
+# View logs
+yarn logs
+# Or: yarn docker:dev:logs
+
+# Access container shell (for debugging)
+yarn shell
+# Or: yarn docker:dev:shell
+```
 
 ---
 
-## 🤝 How to Contribute
+## 📋 Development Workflow for Contributors
+
+### Daily Development
+
+```bash
+# 1. Sync with upstream
+git checkout main
+git pull upstream main
+git push origin main
+
+# 2. Create feature branch
+git checkout -b feature/your-feature-name
+
+# 3. Start development environment
+yarn setup:dev
+# Or if already set up: yarn docker:dev
+
+# 4. Make your changes...
+
+# 5. Run tests and checks
+yarn test
+yarn lint
+yarn typecheck
+
+# 6. Test in different environments
+yarn docker:test:run         # Run tests in test environment
+yarn docker:test:coverage    # Generate coverage report
+
+# 7. Commit and push
+git add .
+git commit -m "feat: your descriptive commit message"
+git push origin feature/your-feature-name
+
+# 8. Create Pull Request on GitHub
+```
+
+### Testing Your Changes
+
+```bash
+# Run all tests
+yarn test
+
+# Run tests with coverage
+yarn test:coverage
+
+# Run integration tests
+yarn test:integration
+
+# Test Docker containers
+yarn docker:test            # Start test environment
+yarn docker:test:run        # Run tests in containers
+yarn docker:test:coverage   # Generate coverage in containers
+
+# Manual API testing
+yarn health                 # Check API health
+curl http://localhost:5000/api-docs  # Check API docs
+```
+
+### Debugging and Troubleshooting
+
+```bash
+# View logs
+yarn logs                   # Development logs
+yarn docker:dev:logs        # Development logs
+
+# Access container shell
+yarn shell                  # Development container
+yarn docker:dev:shell       # Development container
+
+# Check service status
+yarn docker:status          # All containers status
+yarn docker:health          # Health check status
+
+# Restart services
+yarn restart                # Restart development environment
+yarn reset                  # Complete reset (clean + setup)
+```
+
+---
+
+## 🤝 Contributing to SafeExec
+
+We welcome contributions from developers of all skill levels! Whether you're fixing bugs, adding features, improving documentation, or enhancing security, your contributions help make this project better for everyone.
+
+### How to Contribute
 
 - **Find an issue**: Look for [good first issue](https://github.com/vikashkrdeveloper/SafeExec/issues?q=is%3Aissue+is%3Aopen+label%3Agood-first-issue) or [help wanted](https://github.com/vikashkrdeveloper/SafeExec/issues?q=is%3Aissue+is%3Aopen+label%3Ahelp-wanted)
 - **Discuss**: Comment on issues or open a new one for ideas
@@ -80,86 +221,35 @@ See the [Contributing Guide](CONTRIBUTING) for more details.
 
 ---
 
-## 🚀 Quick Start (for all users)
+## 📦 Deployment
 
-### Prerequisites
-
-- **Node.js 18+** and **Yarn**
-- **Docker & Docker Compose**
-- **Git**
-- **MongoDB** and **Redis** (via Docker Compose)
-
-### Local Development Setup
-
-```bash
-yarn setup:dev
-# or step by step:
-yarn setup
-cp .env.example .env
-# Edit .env
-
-yarn docker:setup:dev
-# or: yarn dev
-```
+> **Note:** This project is open source and intended for local development, testing, and educational use. For production deployment, please refer to the [DEPLOYMENT.md](docs/DEPLOYMENT.md) guide and follow security best practices. **Production-specific instructions have been removed from this README.**
 
 ---
 
-## 📚 Documentation
+## 🛡️ Security Best Practices
 
-- [API Documentation](docs/API.md)
-- [Development Guide](docs/DEVELOPMENT.md)
-- [Docker Guide](docs/DOCKER.md)
+> For production security, see [DEPLOYMENT.md](docs/DEPLOYMENT.md) and [DOCKER.md](docs/DOCKER.md).
 
 ---
 
-## 📝 API Endpoints (Sample)
+**Thank you for contributing to SafeExec! 🚀**
 
-- `POST /api/auth/register` — Register user
-- `POST /api/auth/login` — Login
-- `GET /api/auth/profile` — Get profile
-- `POST /api/submit` — Submit code
-- `GET /api/problems` — List problems
-
-See [API.md](docs/API.md) for full details.
-
----
-
-## 🛡️ Security & Architecture
-
-- Isolated Docker containers for each code run
-- JWT authentication & rate limiting
-- Input validation & sanitization
-- Resource limits (CPU, memory, time)
-- Audit logs & monitoring
-
----
-
-## 📦 Project Structure
-
-```
-SafeExec/
-├── src/           # Source code
-├── docker/        # Docker configs
-├── tests/         # Tests
-├── docs/          # Documentation
-├── scripts/       # Utility scripts
-├── ...            # More files
-```
-
----
-
-## 🆘 Getting Help
-
-- Check [issues](https://github.com/vikashkrdeveloper/SafeExec/issues)
-- Read the docs
-- Open a discussion or ask a question
-
----
+Your contributions help create a better, more secure code execution platform for developers worldwide.
 
 ## 📄 License
 
 MIT License - see LICENSE file for details
 
+## 🆘 Support
+
+For issues and questions:
+
+- Create GitHub issues for bugs
+- Check documentation for common solutions
+- Review logs for detailed error information
+- Test with provided test scripts
+
 ---
 
-**Thank you for contributing to SafeExec! 🚀**
+**⚠️ Security Notice**: This is a powerful system that executes arbitrary code. Always run in isolated environments and follow security best practices for production deployments.
