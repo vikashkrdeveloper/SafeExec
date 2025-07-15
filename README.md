@@ -217,7 +217,7 @@ We welcome contributions from developers of all skill levels! Whether you're fix
 - **Write tests**: Keep coverage high
 - **Update docs**: If you change or add features
 
-See the [Contributing Guide](CONTRIBUTING) for more details.
+See the [Contributing Guide](CONTRIBUTING.md) for more details.
 
 ---
 
