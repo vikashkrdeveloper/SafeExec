@@ -8,124 +8,151 @@
 [![MongoDB](https://img.shields.io/badge/MongoDB-7.0+-green.svg)](https://www.mongodb.com/)
 [![Redis](https://img.shields.io/badge/Redis-7.0+-red.svg)](https://redis.io/)
 
-> **SafeExec** is an open-source Remote Code Execution (RCE) platform for secure, isolated code execution in multiple programming languages. Built with a security-first architecture, it provides Docker-containerized execution environments, JWT authentication, rate limiting, and real-time monitoring.
+> **SafeExec** is an enterprise-grade, open-source Remote Code Execution (RCE) platform that enables secure, isolated execution of code in multiple programming languages. Built with security-first architecture, it provides Docker-containerized execution environments, JWT authentication, comprehensive rate limiting, and real-time monitoring.
 
-## 🌍 Open Source & Community Driven
+## 🌟 Why SafeExec?
 
-- **🌟 Open Source**: Community-driven development. Contributions are welcome!
-- **🔧 Easy Setup**: One-command Docker deployment for local development.
-- **📚 Well Documented**: Comprehensive API docs and contributor guides.
-- **🤝 Friendly for Contributors**: Clear guidelines, good-first-issues, and a welcoming community.
-
-## 🏗️ System Architecture
-
-SafeExec uses a microservices architecture with layered security and isolated execution environments. See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for more details.
+- **🔒 Security First**: Every code execution runs in isolated Docker containers
+- **🌍 Open Source**: Community-driven development and contributions welcome
+- **🔧 Easy Setup**: One-command Docker deployment for all environments
+- **📚 Well Documented**: Comprehensive API docs and contributor guides
 
 ---
 
-## 🚀 Quick Start for Contributors
+## 🧑‍💻 **Contributor Quick Start**
 
-### Prerequisites
-
-- **Node.js 18+** and **Yarn**
-- **Docker & Docker Compose** (latest)
-- **Git**
+> **We love contributors!** Follow these steps to get started quickly:
 
 ### 1. Fork & Clone the Repository
 
 ```bash
-# Fork on GitHub, then:
+# Fork the repository on GitHub first, then:
 git clone https://github.com/YOUR_USERNAME/SafeExec.git
 cd SafeExec
+
 git remote add upstream https://github.com/vikashkrdeveloper/SafeExec.git
 ```
 
-### 2. Local Development Setup (Recommended)
+### 2. Quick Local Setup (Recommended)
 
 ```bash
 yarn setup:dev
-# Installs dependencies, builds Docker executors, starts all services, seeds DB
+# Installs dependencies, builds Docker executors, starts dev environment, seeds DB
 ```
 
 ### 3. Manual Setup (Step by Step)
 
 ```bash
-yarn setup           # Install dependencies & build executors
-cp .env.example .env # Copy env template and edit for local config
-yarn docker:setup:dev # Start all services (API, MongoDB, Redis, Nginx)
-yarn docker:seed:dev # Seed database with sample data
-yarn dev             # (API only, needs local MongoDB/Redis)
+yarn setup
+cp .env.example .env
+# Edit .env as needed
+
+yarn docker:setup:dev
+# Or: yarn dev (if running MongoDB/Redis locally)
 ```
 
 ### 4. Verify Setup
 
 ```bash
-yarn docker:status   # Check all services
-yarn health          # Check API health
-yarn logs            # View logs
-yarn shell           # Access container shell
+yarn docker:status
+yarn health
+```
+
+### 5. Start Contributing!
+
+- Create a feature branch: `git checkout -b feature/your-feature`
+- Make your changes and add tests
+- Run checks: `yarn test && yarn lint && yarn typecheck`
+- Commit and push: `git commit -m "feat: your change" && git push`
+- Open a Pull Request on GitHub
+
+---
+
+## 🤝 How to Contribute
+
+- **Find an issue**: Look for [good first issue](https://github.com/vikashkrdeveloper/SafeExec/issues?q=is%3Aissue+is%3Aopen+label%3Agood-first-issue) or [help wanted](https://github.com/vikashkrdeveloper/SafeExec/issues?q=is%3Aissue+is%3Aopen+label%3Ahelp-wanted)
+- **Discuss**: Comment on issues or open a new one for ideas
+- **Follow code style**: Use ESLint, Prettier, and TypeScript
+- **Write tests**: Keep coverage high
+- **Update docs**: If you change or add features
+
+See the [Contributing Guide](CONTRIBUTING) for more details.
+
+---
+
+## 🚀 Quick Start (for all users)
+
+### Prerequisites
+
+- **Node.js 18+** and **Yarn**
+- **Docker & Docker Compose**
+- **Git**
+- **MongoDB** and **Redis** (via Docker Compose)
+
+### Local Development Setup
+
+```bash
+yarn setup:dev
+# or step by step:
+yarn setup
+cp .env.example .env
+# Edit .env
+
+yarn docker:setup:dev
+# or: yarn dev
 ```
 
 ---
 
-## 🤝 Contributing
+## 📚 Documentation
 
-We welcome contributions from everyone! Whether you're fixing bugs, adding features, improving docs, or enhancing security, your help makes SafeExec better.
-
-### Ways to Contribute
-
-- **🐛 Bug Reports**: Create issues with clear steps
-- **✨ Feature Requests**: Suggest new features
-- **📝 Documentation**: Improve docs or code comments
-- **🔧 Code**: Fix bugs, add features, optimize performance
-- **🛡️ Security**: Help identify and fix vulnerabilities
-- **🧪 Testing**: Add or improve tests
-
-### Getting Started
-
-1. Find or create an issue ([good-first-issue](https://github.com/vikashkrdeveloper/SafeExec/issues?q=is%3Aissue+is%3Aopen+label%3Agood-first-issue) is great for beginners)
-2. Set up your environment (see above)
-3. Follow code style: `yarn lint`, `yarn format`, `yarn typecheck`
-4. Run tests: `yarn test`, `yarn test:coverage`, `yarn test:integration`
-5. Make a branch, commit, push, and open a Pull Request
-
-### Code Guidelines
-
-- Use TypeScript for all new code
-- Add JSDoc for public functions
-- Write tests for new features
-- Keep functions small and focused
-- Use meaningful variable names
+- [API Documentation](docs/API.md)
+- [Development Guide](docs/DEVELOPMENT.md)
+- [Docker Guide](docs/DOCKER.md)
 
 ---
 
-## 📁 Project Structure
+## 📝 API Endpoints (Sample)
 
-See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for a full breakdown.
+- `POST /api/auth/register` — Register user
+- `POST /api/auth/login` — Login
+- `GET /api/auth/profile` — Get profile
+- `POST /api/submit` — Submit code
+- `GET /api/problems` — List problems
+
+See [API.md](docs/API.md) for full details.
+
+---
+
+## 🛡️ Security & Architecture
+
+- Isolated Docker containers for each code run
+- JWT authentication & rate limiting
+- Input validation & sanitization
+- Resource limits (CPU, memory, time)
+- Audit logs & monitoring
+
+---
+
+## 📦 Project Structure
 
 ```
 SafeExec/
 ├── src/           # Source code
 ├── docker/        # Docker configs
-├── tests/         # Test files
+├── tests/         # Tests
 ├── docs/          # Documentation
 ├── scripts/       # Utility scripts
-├── ...
+├── ...            # More files
 ```
-
----
-
-## 📝 API Documentation
-
-See [docs/API.md](docs/API.md) for full API reference.
 
 ---
 
 ## 🆘 Getting Help
 
-- Check documentation and issues
-- Ask questions via GitHub Issues or Discussions
-- When asking for help, include OS, Node.js, Docker versions, error logs, and steps to reproduce
+- Check [issues](https://github.com/vikashkrdeveloper/SafeExec/issues)
+- Read the docs
+- Open a discussion or ask a question
 
 ---
 
