@@ -27,26 +27,40 @@ We use GitHub to host code, to track issues and feature requests, as well as acc
    ```bash
    git clone https://github.com/YOUR_USERNAME/SafeExec.git
    cd SafeExec
+
+   # Add upstream remote for syncing
+   git remote add upstream https://github.com/vikashkrdeveloper/SafeExec.git
    ```
 
-2. **Install dependencies**
+2. **Environment Setup (REQUIRED FIRST STEP)**
 
    ```bash
-   yarn install
+   # Copy environment template - MUST DO THIS FIRST
+   cp .env.example .env
+
+   # Edit the .env file with your local configuration
+   nano .env  # or use your preferred editor
    ```
 
-3. **Set up environment**
+3. **Quick Development Setup**
 
    ```bash
-   # Quick setup for development
-   ./scripts/setup.sh --env development --seed
+   # Complete development setup in one command
+   yarn setup:dev
 
-   # Or manually:
-   cp config/environments/development.env .env
-   # Edit .env if needed
+   # This will install dependencies, build executors,
+   # start Docker environment, and seed database
    ```
 
-4. **Start development environment**
+4. **Manual Setup (Alternative)**
+
+   ```bash
+   # Install dependencies and build executors
+   yarn setup
+
+   # Start development environment
+   yarn docker:setup:dev
+   ```
 
    ```bash
    # Using the unified approach
@@ -60,7 +74,7 @@ We use GitHub to host code, to track issues and feature requests, as well as acc
    ```
 
 5. **Access API Documentation**
-   - Visit http://localhost:5000/api-docs for interactive API docs
+   - Visit <http://localhost:5000/api-docs> for interactive API docs
 
 ## Environment Management
 
@@ -91,7 +105,7 @@ ENV=production yarn docker:prod:logs # View logs
 
 ## Pull Requests
 
-1. Fork the repository and create your branch from `main`.
+1. Fork the repository and create your branch from `master`.
 2. If you've added code that should be tested, add tests.
 3. If you've changed APIs, update the Swagger documentation.
 4. Ensure the test suite passes.
@@ -128,7 +142,7 @@ yarn format        # Format code with Prettier
 yarn typecheck     # TypeScript type checking
 ```
 
-## Testing
+## Testing Guidelines
 
 ### Running Tests
 

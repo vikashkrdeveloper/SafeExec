@@ -46,32 +46,10 @@ cd SafeExec
 git remote add upstream https://github.com/vikashkrdeveloper/SafeExec.git
 ```
 
-### 2. Quick Setup (Recommended for Contributors)
+### 2. Environment Setup (REQUIRED FIRST STEP)
 
 ```bash
-# Complete development setup in one command
-yarn setup:dev
-
-# This command will:
-# - Install all dependencies
-# - Build Docker executor containers
-# - Start development environment with Docker
-# - Seed database with sample data
-```
-
-### 3. Manual Setup (Step by Step)
-
-**3.1. Install Dependencies & Build Executors**
-
-```bash
-yarn setup
-# Equivalent to: yarn install && yarn build:executors
-```
-
-**3.2. Environment Configuration**
-
-```bash
-# Copy environment template
+# Copy environment template - MUST DO THIS FIRST
 cp .env.example .env
 
 # Edit the .env file with your local configuration
@@ -90,7 +68,29 @@ JWT_SECRET=your-super-secret-jwt-key-for-development
 JWT_EXPIRES_IN=24h
 ```
 
-**3.3. Start Development Environment**
+### 3. Quick Setup (Recommended for Contributors)
+
+```bash
+# Complete development setup in one command
+yarn setup:dev
+
+# This command will:
+# - Install all dependencies
+# - Build Docker executor containers
+# - Start development environment with Docker
+# - Seed database with sample data
+```
+
+### 4. Manual Setup (Step by Step)
+
+#### 4.1. Install Dependencies & Build Executors
+
+```bash
+yarn setup
+# Equivalent to: yarn install && yarn build:executors
+```
+
+#### 4.2. Start Development Environment
 
 ```bash
 # Start all services: API, MongoDB, Redis, Nginx
@@ -104,7 +104,7 @@ yarn docker:seed:dev     # Seed database with sample data
 yarn dev                 # API only (requires local MongoDB/Redis)
 ```
 
-**3.4. Verify Setup**
+#### 4.3. Verify Setup
 
 ```bash
 # Check all services are running
@@ -131,9 +131,9 @@ yarn shell
 
 ```bash
 # 1. Sync with upstream
-git checkout main
-git pull upstream main
-git push origin main
+git checkout master
+git pull upstream master
+git push origin master
 
 # 2. Create feature branch
 git checkout -b feature/your-feature-name
@@ -233,7 +233,7 @@ See the [Contributing Guide](CONTRIBUTING.md) for more details.
 
 ---
 
-**Thank you for contributing to SafeExec! 🚀**
+## Thank you for contributing to SafeExec! 🚀
 
 Your contributions help create a better, more secure code execution platform for developers worldwide.
 
