@@ -59,13 +59,26 @@ nano .env  # or use your preferred editor
 **Sample .env for local development:**
 
 ```env
+# Environment
+ENV=development
 NODE_ENV=development
 PORT=5000
-MONGO_URI=mongodb://localhost:27017/rce_dev
-REDIS_HOST=localhost
-REDIS_PORT=6379
+
+# MongoDB (use localhost for local development & MongoDB Compass)
+MONGO_USERNAME=admin
+MONGO_PASSWORD=devpassword
+MONGO_DB=safeexec_dev
+MONGODB_URI=mongodb://admin:devpassword@localhost:27017/safeexec_dev?authSource=admin
+
+# Redis (use localhost for local development & Redis clients)
+REDIS_URI=redis://localhost:6379
+
+# Security
 JWT_SECRET=your-super-secret-jwt-key-for-development
 JWT_EXPIRES_IN=24h
+
+# CORS
+ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001
 ```
 
 ### 3. Quick Setup (Recommended for Contributors)

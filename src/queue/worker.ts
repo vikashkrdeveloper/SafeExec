@@ -1,8 +1,10 @@
 // src/queue/worker.ts
 import { Worker } from 'bullmq';
-import { config } from '../config/env';
+import { environmentConfig } from '../config/environment';
 import { SubmissionModel } from '../models/submission.model';
 import { executeInDocker } from '../executors/dockerExecutor';
+
+const config = environmentConfig.getConfig();
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const worker = new Worker(
@@ -17,7 +19,7 @@ const worker = new Worker(
       _id: submission._id.toString(),
       code: submission.code,
       language: submission.language,
-      timeLimitMs: 10000,
+      timeLimitMs: config.executor.timeoutMs,
       save: async () => {
         await submission.save();
       },
@@ -27,8 +29,13 @@ const worker = new Worker(
   },
   {
     connection: {
-      host: config.redisHost,
-      port: config.redisPort,
+      host: config.redis.uri.includes('://')
+        ? new URL(config.redis.uri).hostname
+        : config.redis.uri.split(':')[0],
+      port: config.redis.uri.includes('://')
+        ? parseInt(new URL(config.redis.uri).port) || 6379
+        : parseInt(config.redis.uri.split(':')[1]) || 6379,
+      ...(config.redis.password && { password: config.redis.password }),
     },
   }
 );
