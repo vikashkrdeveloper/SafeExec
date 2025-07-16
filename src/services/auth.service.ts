@@ -1,5 +1,5 @@
-import jwt from 'jsonwebtoken';
-import bcrypt from 'bcrypt';
+import * as jwt from 'jsonwebtoken';
+import * as bcrypt from 'bcrypt';
 import { UserModel } from '../models/user.model';
 import { logger } from '../utils/logger';
 
@@ -192,6 +192,24 @@ export class AuthService {
       return recentSubmissions < (user.limits?.maxSubmissionsPerHour || 100);
     } catch (error) {
       logger.error('Error checking submission limits:', error);
+      return false;
+    }
+  }
+
+  // Check user code execution limits (for direct execution, not problem-based)
+  static async checkExecutionLimits(userId: string): Promise<boolean> {
+    try {
+      const user = await UserModel.findById(userId);
+      if (!user) return false;
+
+      // For now, we'll allow executions with basic user validation
+      // TODO: Implement proper execution tracking with time-based limits
+      // Similar to submission limits but for direct code execution
+      logger.info(`Checking execution limits for user: ${userId}`);
+
+      return true; // TODO: Implement proper execution tracking
+    } catch (error) {
+      logger.error('Error checking execution limits:', error);
       return false;
     }
   }

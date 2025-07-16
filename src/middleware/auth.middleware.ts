@@ -88,6 +88,33 @@ export const checkSubmissionLimits = async (
   }
 };
 
+export const checkExecutionLimits = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: 'Authentication required' });
+      return;
+    }
+
+    // Check execution limits (similar to submission limits but for direct execution)
+    const canExecute = await AuthService.checkExecutionLimits(req.user.id);
+    if (!canExecute) {
+      res.status(429).json({
+        error: 'Code execution limit exceeded. Please try again later.',
+      });
+      return;
+    }
+
+    next();
+  } catch (error) {
+    logger.error('Error checking execution limits:', error);
+    res.status(500).json({ error: 'Failed to check execution limits' });
+  }
+};
+
 export const optionalAuth = (
   req: Request,
   res: Response,

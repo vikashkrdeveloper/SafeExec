@@ -16,6 +16,10 @@
 - **🌍 Open Source**: Community-driven development and contributions welcome
 - **🔧 Easy Setup**: One-command Docker deployment for all environments
 - **📚 Well Documented**: Comprehensive API docs and contributor guides
+- **🎨 Beautiful API Docs**: Industrial-level Swagger UI with interactive examples
+- **🔄 Hot Reload**: Docker development environment with automatic code reloading
+- **⚡ Multi-Language**: Python, JavaScript, Java, C++, Go support
+- **🚦 Queue System**: Redis-powered job queue for scalable execution
 
 ---
 
@@ -81,7 +85,7 @@ JWT_EXPIRES_IN=24h
 ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001
 ```
 
-### 3. Quick Setup (Recommended for Contributors)
+### 3. Quick Setup with Hot-Reload (Recommended for Contributors)
 
 ```bash
 # Complete development setup in one command
@@ -90,9 +94,14 @@ yarn setup:dev
 # This command will:
 # - Install all dependencies
 # - Build Docker executor containers
-# - Start development environment with Docker
+# - Start development environment with Docker Compose
+# - Mount source code for hot-reload (changes auto-reload containers)
 # - Seed database with sample data
+# - Start both API server and worker with live reloading
 ```
+
+> **🔥 Hot-Reload Feature**: Code changes automatically reload containers without rebuilding!
+> Your changes in VS Code are instantly reflected in the running Docker containers.
 
 ### 4. Manual Setup (Step by Step)
 

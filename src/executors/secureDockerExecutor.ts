@@ -1,5 +1,4 @@
-import Docker from 'dockerode';
-import { v4 as uuidv4 } from 'uuid';
+import Docker = require('dockerode');
 import { logger } from '../utils/logger';
 
 export interface ExecutorConfig {
@@ -31,7 +30,18 @@ export class SecureDockerExecutor {
   private readonly languageConfigs: Record<string, ExecutorConfig>;
 
   constructor() {
-    this.docker = new Docker();
+    // Initialize Docker with better error handling
+    try {
+      this.docker = new Docker({
+        socketPath: '/var/run/docker.sock',
+        version: 'v1.41',
+      });
+    } catch (error) {
+      logger.error('Failed to initialize Docker client:', error);
+      // Fallback to default initialization
+      this.docker = new Docker();
+    }
+
     this.languageConfigs = {
       python: {
         image: 'rce-executor-python:latest',
@@ -77,8 +87,17 @@ export class SecureDockerExecutor {
       },
     };
 
-    // TODO: Initialize executor images for local development
-    // this.initializeExecutorImages();
+    // Test Docker connectivity on initialization
+    this.testDockerConnection();
+  }
+
+  private async testDockerConnection(): Promise<void> {
+    try {
+      await this.docker.ping();
+      logger.info('Docker connection successful');
+    } catch (error) {
+      logger.error('Docker connection failed:', error);
+    }
   }
 
   private async initializeExecutorImages(): Promise<void> {
@@ -138,26 +157,85 @@ export class SecureDockerExecutor {
 
     const config = this.languageConfigs[language.toLowerCase()];
     if (!config) {
-      throw new Error(`Unsupported language: ${language}`);
+      return {
+        success: false,
+        output: '',
+        error: `Unsupported language: ${language}. Supported languages: ${Object.keys(this.languageConfigs).join(', ')}`,
+        executionTime: 0,
+        memoryUsed: 0,
+      };
     }
 
-    const timeout = timeLimit || config.timeout;
-    const memory = memoryLimit || config.memory;
-    const containerId = `rce-exec-${uuidv4()}`;
+    const timeout = Math.min(timeLimit || config.timeout, 30000); // Max 30 seconds
+    const memoryInMB = Math.min(memoryLimit || 128, 512); // Max 512MB
+    const memory = memoryInMB * 1024 * 1024; // Convert MB to bytes
+    const containerId = `rce-exec-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
     let container: Docker.Container | null = null;
     const startTime = Date.now();
 
     try {
+      logger.info(
+        `Starting code execution: language=${language}, timeout=${timeout}ms, memoryLimit=${memoryInMB}MB (${memory}bytes)`
+      );
+
+      // Escape code and input for safe shell execution
+      const escapedCode = code.replace(/'/g, "'\"'\"'");
+      const escapedInput = input.replace(/'/g, "'\"'\"'");
+
+      // Build the execution command based on language
+      let cmd: string[];
+      switch (language.toLowerCase()) {
+        case 'python':
+          cmd = [
+            '/bin/sh',
+            '-c',
+            `echo '${escapedCode}' > /app/solution.py && echo '${escapedInput}' | python3 /app/solution.py`,
+          ];
+          break;
+        case 'javascript':
+        case 'nodejs':
+          cmd = [
+            '/bin/sh',
+            '-c',
+            `echo '${escapedCode}' > /app/solution.js && echo '${escapedInput}' | node /app/solution.js`,
+          ];
+          break;
+        case 'java':
+          cmd = [
+            '/bin/sh',
+            '-c',
+            `echo '${escapedCode}' > /app/Solution.java && echo '${escapedInput}' | java Solution.java`,
+          ];
+          break;
+        case 'cpp':
+          cmd = [
+            '/bin/sh',
+            '-c',
+            `echo '${escapedCode}' > /app/solution.cpp && echo '${escapedInput}' | timeout ${Math.floor(timeout / 1000)} /app/run.sh`,
+          ];
+          break;
+        case 'go':
+          cmd = [
+            '/bin/sh',
+            '-c',
+            `echo '${escapedCode}' > /app/solution.go && echo '${escapedInput}' | timeout ${Math.floor(timeout / 1000)} go run solution.go`,
+          ];
+          break;
+        default:
+          cmd = [
+            '/bin/sh',
+            '-c',
+            `echo '${escapedCode}' > /app/solution && echo '${escapedInput}' | timeout ${Math.floor(timeout / 1000)} /app/run.sh`,
+          ];
+      }
+
       // Create container with security constraints
+      logger.debug(`Creating container with image: ${config.image}`);
       container = await this.docker.createContainer({
         Image: config.image,
         name: containerId,
-        Cmd: [
-          '/bin/sh',
-          '-c',
-          `echo '${code}' > /app/solution && echo '${input}' | timeout ${Math.floor(timeout / 1000)} /app/run.sh`,
-        ],
+        Cmd: cmd,
         WorkingDir: '/app',
         AttachStdout: true,
         AttachStderr: true,
@@ -190,18 +268,16 @@ export class SecureDockerExecutor {
           },
           SecurityOpt: ['no-new-privileges:true'],
         },
-        Env: [
-          `TIME_LIMIT_MS=${timeout}`,
-          `MEMORY_LIMIT_MB=${Math.floor(memory / (1024 * 1024))}`,
-        ],
+        Env: [`TIME_LIMIT_MS=${timeout}`, `MEMORY_LIMIT_MB=${memoryInMB}`],
       });
 
-      // Start container
       if (!container) {
         throw new Error('Failed to create container');
       }
 
+      logger.debug(`Starting container: ${containerId}`);
       await container.start();
+      logger.info(`Container ${containerId} started successfully`);
 
       // Wait for execution with timeout
       const result = await Promise.race([
@@ -212,30 +288,47 @@ export class SecureDockerExecutor {
       const executionTime = Date.now() - startTime;
 
       // Get container stats for memory usage
-      const stats = (await container.stats({ stream: false })) as {
-        memory_stats?: { usage?: number };
-      };
-      const memoryUsed = stats.memory_stats?.usage || 0;
+      let memoryUsed = 0;
+      try {
+        const stats = (await container.stats({ stream: false })) as {
+          memory_stats?: { usage?: number };
+        };
+        memoryUsed = stats.memory_stats?.usage || 0;
+      } catch (statsError) {
+        logger.warn('Failed to get container stats:', statsError);
+      }
+
+      logger.info(
+        `Code execution completed: time=${executionTime}ms, memory=${memoryUsed}bytes, success=${result.success}`
+      );
 
       return {
         ...result,
         executionTime,
-        memoryUsed,
+        memoryUsed: Math.round((memoryUsed / (1024 * 1024)) * 100) / 100, // Convert to MB with 2 decimal places
         containerId,
       };
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown execution error';
+      const executionTime = Date.now() - startTime;
+
       logger.error(
-        `Execution error for container ${containerId}:`,
-        errorMessage
+        `Execution error for container ${containerId}: ${errorMessage}`,
+        {
+          language,
+          timeout,
+          memoryInMB,
+          memoryBytes: memory,
+          error: error instanceof Error ? error.stack : error,
+        }
       );
 
       return {
         success: false,
         output: '',
         error: errorMessage,
-        executionTime: Date.now() - startTime,
+        executionTime,
         memoryUsed: 0,
         containerId,
       };
@@ -243,16 +336,16 @@ export class SecureDockerExecutor {
       // Cleanup container
       if (container) {
         try {
-          await container.kill();
-          await container.remove();
+          await container.kill().catch(() => {}); // Ignore if already stopped
+          await container.remove().catch(() => {}); // Ignore if already removed
+          logger.debug(`Container ${containerId} cleaned up successfully`);
         } catch (cleanupError: unknown) {
           const cleanupErrorMessage =
             cleanupError instanceof Error
               ? cleanupError.message
               : 'Unknown cleanup error';
           logger.error(
-            `Failed to cleanup container ${containerId}:`,
-            cleanupErrorMessage
+            `Failed to cleanup container ${containerId}: ${cleanupErrorMessage}`
           );
         }
       }
@@ -266,52 +359,76 @@ export class SecureDockerExecutor {
       let output = '';
       let error = '';
 
-      const stream = container.attach({
-        stream: true,
-        stdout: true,
-        stderr: true,
-      });
-
-      stream.then((stream) => {
-        container.modem.demuxStream(
-          stream,
-          {
+      container
+        .attach({
+          stream: true,
+          stdout: true,
+          stderr: true,
+        })
+        .then((stream) => {
+          // Set up demux streams
+          const stdout = {
             write: (chunk: Buffer) => {
               output += chunk.toString();
             },
-          },
-          {
+          };
+
+          const stderr = {
             write: (chunk: Buffer) => {
               error += chunk.toString();
             },
-          }
-        );
+          };
 
-        stream.on('end', async () => {
-          const data = await container.wait();
+          container.modem.demuxStream(stream, stdout, stderr);
 
-          // Try to parse as JSON first (for structured output)
-          try {
-            const result = JSON.parse(output);
+          stream.on('end', async () => {
+            try {
+              const data = await container.wait();
+              const exitCode = data.StatusCode;
+
+              // Clean up output strings
+              output = output.trim();
+              error = error.trim();
+
+              // Determine success based on exit code and presence of errors
+              const success = exitCode === 0 && !error;
+
+              resolve({
+                success,
+                output,
+                error:
+                  error ||
+                  (exitCode !== 0
+                    ? `Process exited with code ${exitCode}`
+                    : ''),
+              });
+            } catch (waitError) {
+              logger.error('Container wait error:', waitError);
+              resolve({
+                success: false,
+                output: output.trim(),
+                error: `Container wait failed: ${waitError instanceof Error ? waitError.message : 'Unknown error'}`,
+              });
+            }
+          });
+
+          stream.on('error', (streamError) => {
+            logger.error('Container stream error:', streamError);
             resolve({
-              success: result.success,
-              output: result.output || '',
-              error: result.error || '',
-            });
-          } catch {
-            // If not JSON, treat as plain output
-            resolve({
-              success: data?.StatusCode === 0,
+              success: false,
               output: output.trim(),
-              error:
-                error.trim() ||
-                (data?.StatusCode !== 0
-                  ? `Process exited with code ${data?.StatusCode}`
-                  : ''),
+              error: `Stream error: ${streamError.message}`,
             });
-          }
+          });
+        })
+        .catch((attachError) => {
+          logger.error('Container attach error:', attachError);
+          resolve({
+            success: false,
+            output: '',
+            error: `Failed to attach to container: ${attachError.message}`,
+          });
         });
-      });
     });
   }
 
