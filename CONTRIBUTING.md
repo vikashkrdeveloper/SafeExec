@@ -1,219 +1,137 @@
-# Contributing to SafeExec
+# 🤝 Contributing to SafeExec
 
-We love your input! We want to make contributing to SafeExec as easy and transparent as possible, whether it's:
+Thank you for your interest in contributing to SafeExec! We welcome contributions from developers of all skill levels.
 
-- Reporting a bug
-- Discussing the current state of the code
-- Submitting a fix
-- Proposing new features
-- Becoming a maintainer
+## 🚀 Quick Contributor Setup
 
-## Development Process
-
-We use GitHub to host code, to track issues and feature requests, as well as accept pull requests.
-
-## Getting Started
+> **Follow the README.md setup first!**
+>
+> Make sure you've completed the [Contributor Quick Setup](../README.md#-contributor-quick-setup) section in the main README before proceeding.
 
 ### Prerequisites
 
-- Node.js 18+ and Yarn
-- Docker and Docker Compose
-- Git
+- **Node.js 18+** and **Yarn** package manager
+- **Docker & Docker Compose** (latest versions)
+- **Git** for version control
 
-### Setup
-
-1. **Fork and clone the repository**
-
-   ```bash
-   git clone https://github.com/YOUR_USERNAME/SafeExec.git
-   cd SafeExec
-
-   # Add upstream remote for syncing
-   git remote add upstream https://github.com/vikashkrdeveloper/SafeExec.git
-   ```
-
-2. **Environment Setup (REQUIRED FIRST STEP)**
-
-   ```bash
-   # Copy environment template - MUST DO THIS FIRST
-   cp .env.example .env
-
-   # Edit the .env file with your local configuration
-   nano .env  # or use your preferred editor
-   ```
-
-3. **Quick Development Setup**
-
-   ```bash
-   # Complete development setup in one command
-   yarn setup:dev
-
-   # This will install dependencies, build executors,
-   # start Docker environment, and seed database
-   ```
-
-4. **Manual Setup (Alternative)**
-
-   ```bash
-   # Install dependencies and build executors
-   yarn setup
-
-   # Start development environment
-   yarn docker:setup:dev
-   ```
-
-   ```bash
-   # Using the unified approach
-   ENV=development yarn docker:dev
-
-   # Or step by step
-   yarn build:executors
-   yarn docker:dev:build
-   yarn docker:dev
-   yarn seed
-   ```
-
-5. **Access API Documentation**
-   - Visit <http://localhost:5000/api-docs> for interactive API docs
-
-## Environment Management
-
-This project uses a unified Docker setup controlled by the `ENV` variable:
-
-### Development
+### 1. Fork & Clone
 
 ```bash
-ENV=development yarn docker:dev      # Start dev environment
-ENV=development yarn docker:dev:logs # View logs
-ENV=development yarn docker:dev:down # Stop services
+# Fork the repository on GitHub first, then:
+git clone https://github.com/YOUR_USERNAME/SafeExec.git
+cd SafeExec
+
+# Add upstream remote for syncing
+git remote add upstream https://github.com/vikashkrdeveloper/SafeExec.git
 ```
 
-### Testing
+### 2. Environment Setup (REQUIRED FIRST)
 
 ```bash
-ENV=test yarn docker:test           # Start test environment
-ENV=test yarn docker:test:run       # Run tests in container
-ENV=test yarn docker:test:coverage  # Generate coverage
+# Copy environment template - MUST DO THIS FIRST
+cp .env.example .env
+
+# Edit with your local configuration
+nano .env
 ```
 
-### Production
+### 3. Quick Setup
 
 ```bash
-ENV=production yarn docker:prod     # Start prod environment
-ENV=production yarn docker:prod:logs # View logs
+# Complete development setup in one command
+yarn setup:dev
 ```
 
-## Pull Requests
-
-1. Fork the repository and create your branch from `master`.
-2. If you've added code that should be tested, add tests.
-3. If you've changed APIs, update the Swagger documentation.
-4. Ensure the test suite passes.
-5. Make sure your code lints and formats correctly.
-6. Issue that pull request!
-
-## Code Style
-
-### Use Yarn for Package Management
-
-This project uses Yarn as the package manager. Always use Yarn commands:
+### 4. Verify Setup
 
 ```bash
-yarn install           # Not npm install
-yarn add package       # Not npm install package
-yarn remove package    # Not npm uninstall package
+# Check API health
+yarn health
+
+# View logs
+yarn logs
+
+# Access API docs
+# Visit http://localhost:5000/api-docs
 ```
 
-### TypeScript Guidelines
+## 📋 Development Workflow
 
-- Use TypeScript for all new code
-- Prefer interfaces over types for object shapes
-- Use proper typing - avoid `any`
-- Export interfaces from dedicated files in `src/interfaces/`
-
-### Code Formatting
-
-We use Prettier and ESLint:
+### Daily Development
 
 ```bash
-yarn lint          # Check for linting errors
+# 1. Sync with upstream
+git checkout master
+git pull upstream master
+git push origin master
+
+# 2. Create feature branch
+git checkout -b feature/your-feature-name
+
+# 3. Start development environment
+yarn setup:dev
+# Or if already set up: yarn docker:dev
+
+# 4. Make your changes...
+
+# 5. Run tests and checks
+yarn test
+yarn lint
+yarn typecheck
+
+# 6. Commit and push
+git add .
+git commit -m "feat: your descriptive commit message"
+git push origin feature/your-feature-name
+
+# 7. Create Pull Request on GitHub
+```
+
+## 🧪 Testing
+
+```bash
+# Run all tests
+yarn test
+
+# Run tests with coverage
+yarn test:coverage
+
+# Run integration tests
+yarn test:integration
+
+# Test Docker containers
+yarn docker:test:run         # Run tests in test environment
+yarn docker:test:coverage    # Generate coverage report
+```
+
+## 🎨 Code Style
+
+### Formatting & Linting
+
+```bash
+yarn lint          # Check code style
 yarn lint:fix      # Fix auto-fixable errors
 yarn format        # Format code with Prettier
 yarn typecheck     # TypeScript type checking
 ```
 
-## Testing Guidelines
+### Guidelines
 
-### Running Tests
+- Use TypeScript for all new code
+- Follow existing naming conventions
+- Add JSDoc comments for public functions
+- Write tests for new features
+- Keep functions small and focused
 
-```bash
-yarn test              # Run all tests
-yarn test:watch        # Run tests in watch mode
-yarn test:coverage     # Generate coverage report
-yarn test:integration  # Run integration tests only
-
-# Or in Docker
-ENV=test yarn docker:test:run       # Run tests in container
-ENV=test yarn docker:test:coverage  # Generate coverage in container
-```
-
-### Writing Tests
-
-- Write unit tests for all new functions and methods
-- Add integration tests for new API endpoints
-- Use descriptive test names
-- Aim for >80% code coverage
-- Mock external dependencies
-
-## Docker Development
-
-### Unified Docker Setup
-
-The project now uses a single `docker-compose.yml` file controlled by environment variables:
-
-```bash
-# Development
-ENV=development docker compose up -d
-
-# Testing
-ENV=test docker compose up -d
-
-# Production
-ENV=production docker compose up -d
-```
-
-### Environment Configuration
-
-Environment-specific configurations are in `config/environments/`:
-
-- `development.env` - Development settings
-- `test.env` - Testing settings
-- `production.env` - Production settings
-
-### Adding New Language Support
-
-1. Create `docker/executors/Dockerfile.{language}`
-2. Update `scripts/build-executors.sh`
-3. Add language validation in validators
-4. Update Swagger documentation
-5. Add tests for the new language
-
-## Security
+## 🔐 Security Guidelines
 
 - Never commit sensitive data (passwords, keys, tokens)
 - Validate all inputs using express-validator
 - Use proper authentication for protected endpoints
-- Implement rate limiting for public APIs
+- Test container isolation
 - Sanitize error messages
 
-## Performance
-
-- Use proper database indexes
-- Leverage Redis for caching
-- Set appropriate Docker resource limits
-- Use BullMQ for background processing
-
-## Bug Reports
+## 🐛 Bug Reports
 
 Great bug reports include:
 
@@ -223,10 +141,21 @@ Great bug reports include:
 - System information (OS, Node.js version, etc.)
 - Error logs and stack traces
 
-## Questions?
+## 💡 Pull Request Guidelines
 
-Feel free to open an issue if you have questions about contributing!
+1. Fork the repository and create your branch from `master`
+2. Add tests for new code
+3. Update API documentation if needed
+4. Ensure tests pass: `yarn test`
+5. Check code style: `yarn lint`
+6. Create a clear PR description
 
-## License
+## 🆘 Questions?
 
-By contributing, you agree that your contributions will be licensed under its MIT License.
+- Check the [README.md](../README.md) for setup help
+- Look at existing [GitHub Issues](https://github.com/vikashkrdeveloper/SafeExec/issues)
+- Create a new issue for questions
+
+## 📄 License
+
+By contributing, you agree that your contributions will be licensed under the MIT License.
