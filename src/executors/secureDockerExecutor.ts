@@ -1,4 +1,4 @@
-import Docker = require('dockerode');
+import Docker from 'dockerode';
 import { logger } from '../utils/logger';
 
 export interface ExecutorConfig {

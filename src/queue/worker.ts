@@ -3,12 +3,19 @@ import { Worker, WorkerOptions } from 'bullmq';
 import { environmentConfig } from '../config/environment';
 import { SubmissionModel } from '../models/submission.model';
 import { SecureDockerExecutor } from '../executors/secureDockerExecutor';
+import { getPerformanceMonitor } from '../services/performanceMonitor';
 import { logger } from '../utils/logger';
 
 const config = environmentConfig.getConfig();
 
-// Initialize the secure executor
+// Enhanced error type for job processing
+interface ProcessingError extends Error {
+  shouldRetry?: boolean;
+}
+
+// Initialize the secure executor and performance monitor
 const executor = new SecureDockerExecutor();
+const performanceMonitor = getPerformanceMonitor(executor);
 
 // Enhanced worker configuration for high throughput
 const workerConfig: WorkerOptions = {
@@ -27,15 +34,21 @@ const workerConfig: WorkerOptions = {
     family: 4,
     connectTimeout: 10000,
     commandTimeout: 5000,
+    // Connection pooling for better performance
+    db: 0,
+    keepAlive: 30000,
   },
-  concurrency: 10, // Process up to 10 jobs concurrently per worker
+  concurrency: parseInt(process.env.WORKER_CONCURRENCY || '20'), // Increased from 10
   removeOnComplete: { count: 100 },
   removeOnFail: { count: 50 },
+  maxStalledCount: 1, // Reduce stalled job retries
+  stalledInterval: 30000, // Check for stalled jobs every 30s
 };
 
 // Processing function that can be reused
 const processSubmission = async (submissionId: string) => {
   logger.info(`Processing submission: ${submissionId}`);
+  const startTime = Date.now();
 
   try {
     const submission = await SubmissionModel.findById(submissionId);
@@ -63,6 +76,10 @@ const processSubmission = async (submissionId: string) => {
       timeLimit: config.executor.timeoutMs,
       memoryLimit: config.executor.memoryLimitMb,
     });
+
+    // Record execution metrics for performance monitoring
+    const executionTime = Date.now() - startTime;
+    performanceMonitor.recordExecution(result.success, executionTime);
 
     // Update submission with results
     submission.status = result.success ? 'completed' : 'failed';
@@ -100,7 +117,27 @@ const processSubmission = async (submissionId: string) => {
     );
     return { submissionId, success: result.success };
   } catch (error) {
+    const executionTime = Date.now() - startTime;
+    performanceMonitor.recordExecution(false, executionTime);
+
     logger.error(`Failed to process submission ${submissionId}:`, error);
+
+    // Enhanced error handling for different error types
+    let errorMessage = 'Unknown error';
+    let shouldRetry = true;
+
+    if (error instanceof Error) {
+      errorMessage = error.message;
+
+      // Don't retry certain types of errors
+      if (
+        error.message.includes('Concurrent execution limit reached') ||
+        error.message.includes('Docker') ||
+        error.message.includes('timeout')
+      ) {
+        shouldRetry = false;
+      }
+    }
 
     try {
       const submission = await SubmissionModel.findById(submissionId);
@@ -110,16 +147,26 @@ const processSubmission = async (submissionId: string) => {
           submission.result = {
             success: false,
             output: '',
-            error: error instanceof Error ? error.message : 'Unknown error',
-            executionTime: 0,
+            error: errorMessage,
+            executionTime: executionTime,
             memoryUsed: 0,
             testCasesPassed: 0,
             totalTestCases: 0,
           };
         } else {
-          submission.result.error =
-            error instanceof Error ? error.message : 'Unknown error';
+          submission.result.error = errorMessage;
+          submission.result.executionTime = executionTime;
         }
+
+        if (!submission.timing) {
+          submission.timing = {
+            submittedAt: new Date(),
+            completedAt: new Date(),
+          };
+        } else {
+          submission.timing.completedAt = new Date();
+        }
+
         await submission.save();
       }
     } catch (updateError) {
@@ -129,7 +176,10 @@ const processSubmission = async (submissionId: string) => {
       );
     }
 
-    throw error;
+    // Throw with retry flag for job queue handling
+    const enhancedError = new Error(errorMessage) as ProcessingError;
+    enhancedError.shouldRetry = shouldRetry;
+    throw enhancedError;
   }
 };
 
@@ -164,7 +214,13 @@ const batchWorker = new Worker(
     const { submissionIds } = job.data;
     logger.info(`Processing batch of ${submissionIds.length} submissions`);
 
-    const results = [];
+    // Define proper return type for results
+    const results: Array<{
+      submissionId: string;
+      success: boolean;
+      error?: string;
+    }> = [];
+
     for (const submissionId of submissionIds) {
       try {
         const result = await processSubmission(submissionId);
@@ -185,9 +241,40 @@ const batchWorker = new Worker(
   }
 );
 
-// Error handlers
-submissionWorker.on('failed', (job, err) => {
+// Error handlers with circuit breaker logic
+let consecutiveFailures = 0;
+const MAX_CONSECUTIVE_FAILURES = 10;
+let circuitBreakerOpen = false;
+
+submissionWorker.on('failed', async (job, err) => {
+  consecutiveFailures++;
   logger.error(`Submission job ${job?.id} failed:`, err);
+
+  // Open circuit breaker if too many failures
+  if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES && !circuitBreakerOpen) {
+    circuitBreakerOpen = true;
+    logger.error(
+      `Circuit breaker opened due to ${consecutiveFailures} consecutive failures`
+    );
+
+    // Pause worker for 30 seconds
+    await submissionWorker.pause();
+    setTimeout(async () => {
+      try {
+        await submissionWorker.resume();
+        consecutiveFailures = 0;
+        circuitBreakerOpen = false;
+        logger.info('Circuit breaker closed, resuming operations');
+      } catch (error) {
+        logger.error('Failed to resume worker:', error);
+      }
+    }, 30000);
+  }
+});
+
+submissionWorker.on('completed', (job) => {
+  consecutiveFailures = 0; // Reset failure count on success
+  logger.info(`Submission job ${job.id} completed successfully`);
 });
 
 priorityWorker.on('failed', (job, err) => {
@@ -199,9 +286,35 @@ batchWorker.on('failed', (job, err) => {
 });
 
 // Success handlers
-submissionWorker.on('completed', (job) => {
-  logger.info(`Submission job ${job.id} completed successfully`);
+priorityWorker.on('completed', (job) => {
+  logger.info(`Priority job ${job.id} completed successfully`);
 });
+
+batchWorker.on('completed', (job) => {
+  logger.info(`Batch job ${job.id} completed successfully`);
+});
+
+// Health monitoring and load management
+setInterval(async () => {
+  try {
+    const health = await performanceMonitor.getHealthStatus();
+
+    if (health.status === 'critical') {
+      logger.warn('System under critical load - monitoring worker performance');
+
+      // Log current metrics for debugging
+      const metrics = performanceMonitor.getMetrics();
+      logger.warn('Current metrics:', {
+        totalExecutions: metrics.totalExecutions,
+        successRate: metrics.successRate,
+        currentLoad: metrics.currentLoad,
+        containerCount: metrics.containerCount,
+      });
+    }
+  } catch (error) {
+    logger.error('Health check failed in worker:', error);
+  }
+}, 60000); // Check every minute
 
 logger.info('👷 Enhanced workers running with high concurrency support...');
 logger.info(
