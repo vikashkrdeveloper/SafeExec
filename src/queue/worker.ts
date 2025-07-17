@@ -3,7 +3,7 @@ import { Worker, WorkerOptions } from 'bullmq';
 import { environmentConfig } from '../config/environment';
 import { SubmissionModel } from '../models/submission.model';
 import { SecureDockerExecutor } from '../executors/secureDockerExecutor';
-import { getPerformanceMonitor } from '../services/performanceMonitor';
+// import { getPerformanceMonitor } from '../services/performanceMonitor';
 import { logger } from '../utils/logger';
 
 const config = environmentConfig.getConfig();
@@ -15,7 +15,7 @@ interface ProcessingError extends Error {
 
 // Initialize the secure executor and performance monitor
 const executor = new SecureDockerExecutor();
-const performanceMonitor = getPerformanceMonitor(executor);
+// const performanceMonitor = getPerformanceMonitor(executor);
 
 // Enhanced worker configuration for high throughput
 const workerConfig: WorkerOptions = {
@@ -78,8 +78,8 @@ const processSubmission = async (submissionId: string) => {
     });
 
     // Record execution metrics for performance monitoring
-    const executionTime = Date.now() - startTime;
-    performanceMonitor.recordExecution(result.success, executionTime);
+    // const executionTime = Date.now() - startTime;
+    // performanceMonitor.recordExecution(result.success, executionTime);
 
     // Update submission with results
     submission.status = result.success ? 'completed' : 'failed';
@@ -118,7 +118,7 @@ const processSubmission = async (submissionId: string) => {
     return { submissionId, success: result.success };
   } catch (error) {
     const executionTime = Date.now() - startTime;
-    performanceMonitor.recordExecution(false, executionTime);
+    // performanceMonitor.recordExecution(false, executionTime);
 
     logger.error(`Failed to process submission ${submissionId}:`, error);
 
@@ -295,26 +295,26 @@ batchWorker.on('completed', (job) => {
 });
 
 // Health monitoring and load management
-setInterval(async () => {
-  try {
-    const health = await performanceMonitor.getHealthStatus();
+// setInterval(async () => {
+//   try {
+//     // const health = await performanceMonitor.getHealthStatus();
 
-    if (health.status === 'critical') {
-      logger.warn('System under critical load - monitoring worker performance');
+//     if (health.status === 'critical') {
+//       // logger.warn('System under critical load - monitoring worker performance');
 
-      // Log current metrics for debugging
-      const metrics = performanceMonitor.getMetrics();
-      logger.warn('Current metrics:', {
-        totalExecutions: metrics.totalExecutions,
-        successRate: metrics.successRate,
-        currentLoad: metrics.currentLoad,
-        containerCount: metrics.containerCount,
-      });
-    }
-  } catch (error) {
-    logger.error('Health check failed in worker:', error);
-  }
-}, 60000); // Check every minute
+//       // Log current metrics for debugging
+//       // const metrics = performanceMonitor.getMetrics();
+//       // logger.warn('Current metrics:', {
+//       //   totalExecutions: metrics.totalExecutions,
+//       //   successRate: metrics.successRate,
+//       //   currentLoad: metrics.currentLoad,
+//       //   containerCount: metrics.containerCount,
+//       // });
+//     }
+//   } catch (error) {
+//     logger.error('Health check failed in worker:', error);
+//   }
+// }, 60000); // Check every minute
 
 logger.info('👷 Enhanced workers running with high concurrency support...');
 logger.info(
