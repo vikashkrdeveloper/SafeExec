@@ -73,25 +73,28 @@ services:
       MONGO_USERNAME: ${MONGO_USERNAME:-admin}
       MONGO_PASSWORD: ${MONGO_PASSWORD:-devpassword}
       MONGO_DB: ${MONGO_DB:-safeexec_dev}
-      MONGODB_URI: mongodb://${MONGO_USERNAME:-admin}:${MONGO_PASSWORD:-devpassword}@mongodb:27017/${MONGO_DB:-safeexec_dev}?authSource=admin
+      MONGODB_URI: mongodb://${MONGO_USERNAME:-admin}:${MONGO_PASSWORD:-devpassword}@mongodb:27017/${MONGO_DB:-safeexec_dev}?authSource=admin&maxPoolSize=50&minPoolSize=5
       REDIS_URI: redis://${REDIS_PASSWORD:+:${REDIS_PASSWORD}@}redis:6379
       JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret-change-in-production}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
       DOCKER_HOST: /var/run/docker.sock
       LOG_LEVEL: ${LOG_LEVEL:-info}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
+      API_BASE_URL: ${API_BASE_URL:-http://localhost}
       SWAGGER_UI_ENABLED: ${SWAGGER_UI_ENABLED:-true}
-      MAX_SUBMISSIONS_PER_MINUTE: ${MAX_SUBMISSIONS_PER_MINUTE:-10}
-      MAX_SUBMISSIONS_PER_HOUR: ${MAX_SUBMISSIONS_PER_HOUR:-100}
-      MAX_SUBMISSIONS_PER_DAY: ${MAX_SUBMISSIONS_PER_DAY:-500}
+      MAX_SUBMISSIONS_PER_MINUTE: ${MAX_SUBMISSIONS_PER_MINUTE:-100}
+      MAX_SUBMISSIONS_PER_HOUR: ${MAX_SUBMISSIONS_PER_HOUR:-1000}
+      MAX_SUBMISSIONS_PER_DAY: ${MAX_SUBMISSIONS_PER_DAY:-10000}
       EXECUTOR_TIMEOUT_MS: ${EXECUTOR_TIMEOUT_MS:-30000}
-      EXECUTOR_MEMORY_LIMIT_MB: ${EXECUTOR_MEMORY_LIMIT_MB:-128}
-      EXECUTOR_CPU_LIMIT: ${EXECUTOR_CPU_LIMIT:-0.5}
+      EXECUTOR_MEMORY_LIMIT_MB: ${EXECUTOR_MEMORY_LIMIT_MB:-256}
+      EXECUTOR_CPU_LIMIT: ${EXECUTOR_CPU_LIMIT:-1.0}
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock:rw
       - app_logs:/app/logs
       # Development: Source code mounting disabled due to path with spaces
       # For development, rebuild the image after code changes using yarn docker:dev:build
+    # Run as root to access Docker socket - this is acceptable for development
+    user: 'root'
     depends_on:
       mongodb:
         condition: service_healthy
@@ -128,17 +131,19 @@ services:
       MONGO_USERNAME: ${MONGO_USERNAME:-admin}
       MONGO_PASSWORD: ${MONGO_PASSWORD:-devpassword}
       MONGO_DB: ${MONGO_DB:-safeexec_dev}
-      MONGODB_URI: mongodb://${MONGO_USERNAME:-admin}:${MONGO_PASSWORD:-devpassword}@mongodb:27017/${MONGO_DB:-safeexec_dev}?authSource=admin
+      MONGODB_URI: mongodb://${MONGO_USERNAME:-admin}:${MONGO_PASSWORD:-devpassword}@mongodb:27017/${MONGO_DB:-safeexec_dev}?authSource=admin&maxPoolSize=50&minPoolSize=5
       REDIS_URI: redis://${REDIS_PASSWORD:+:${REDIS_PASSWORD}@}redis:6379
       JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret-change-in-production}
       DOCKER_HOST: /var/run/docker.sock
       LOG_LEVEL: ${LOG_LEVEL:-info}
       EXECUTOR_TIMEOUT_MS: ${EXECUTOR_TIMEOUT_MS:-30000}
-      EXECUTOR_MEMORY_LIMIT_MB: ${EXECUTOR_MEMORY_LIMIT_MB:-128}
-      EXECUTOR_CPU_LIMIT: ${EXECUTOR_CPU_LIMIT:-0.5}
+      EXECUTOR_MEMORY_LIMIT_MB: ${EXECUTOR_MEMORY_LIMIT_MB:-256}
+      EXECUTOR_CPU_LIMIT: ${EXECUTOR_CPU_LIMIT:-1.0}
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock:rw
       - app_logs:/app/logs
+    # Run as root to access Docker socket - this is acceptable for development
+    user: 'root'
     depends_on:
       mongodb:
         condition: service_healthy
@@ -148,7 +153,7 @@ services:
       - rce-network
     command: yarn worker
     deploy:
-      replicas: ${WORKER_REPLICAS:-1}
+      replicas: ${WORKER_REPLICAS:-4} # Increased default workers for better performance
 
   # Nginx Reverse Proxy
   nginx:

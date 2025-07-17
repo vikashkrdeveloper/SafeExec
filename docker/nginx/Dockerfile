@@ -22,7 +22,10 @@ COPY docker/nginx/ssl /etc/nginx/ssl/
 
 # Create startup script
 RUN echo '#!/bin/sh' > /docker-entrypoint.sh && \
-    echo 'envsubst "$BACKEND_HOST $BACKEND_PORT" < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf' >> /docker-entrypoint.sh && \
+    echo '# Set default values if not provided' >> /docker-entrypoint.sh && \
+    echo 'export BACKEND_HOST=${BACKEND_HOST:-rce-api}' >> /docker-entrypoint.sh && \
+    echo 'export BACKEND_PORT=${BACKEND_PORT:-5000}' >> /docker-entrypoint.sh && \
+    echo 'envsubst "\$BACKEND_HOST \$BACKEND_PORT" < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf' >> /docker-entrypoint.sh && \
     echo 'exec nginx -g "daemon off;"' >> /docker-entrypoint.sh && \
     chmod +x /docker-entrypoint.sh
 

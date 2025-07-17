@@ -52,19 +52,19 @@ export class SecureDockerExecutor {
       cpp: {
         image: 'rce-executor-cpp:latest',
         dockerfile: 'Dockerfile.cpp',
-        timeout: 15000,
-        memory: 256 * 1024 * 1024, // 256MB
+        timeout: 20000, // Increased for compilation
+        memory: 512 * 1024 * 1024, // 512MB - increased for C++
       },
       go: {
         image: 'rce-executor-go:latest',
         dockerfile: 'Dockerfile.go',
-        timeout: 10000,
-        memory: 128 * 1024 * 1024, // 128MB
+        timeout: 15000,
+        memory: 256 * 1024 * 1024, // 256MB
       },
       java: {
         image: 'rce-executor-java:latest',
         dockerfile: 'Dockerfile.java',
-        timeout: 20000,
+        timeout: 25000, // Increased for JVM startup
         memory: 512 * 1024 * 1024, // 512MB
       },
       nodejs: {
@@ -82,8 +82,8 @@ export class SecureDockerExecutor {
       rust: {
         image: 'rce-executor-rust:latest',
         dockerfile: 'Dockerfile.rust',
-        timeout: 15000,
-        memory: 256 * 1024 * 1024, // 256MB
+        timeout: 25000, // Increased for compilation
+        memory: 512 * 1024 * 1024, // 512MB
       },
     };
 
@@ -97,6 +97,32 @@ export class SecureDockerExecutor {
       logger.info('Docker connection successful');
     } catch (error) {
       logger.error('Docker connection failed:', error);
+
+      // Provide detailed troubleshooting information
+      if (error instanceof Error) {
+        if (error.message.includes('EACCES')) {
+          logger.error('DOCKER PERMISSION ERROR: Cannot access Docker socket');
+          logger.error('Solutions:');
+          logger.error('1. Run: yarn fix:docker');
+          logger.error(
+            '2. Add user to docker group: sudo usermod -aG docker $USER'
+          );
+          logger.error(
+            '3. Set socket permissions: sudo chmod 666 /var/run/docker.sock'
+          );
+          logger.error('4. Restart Docker: sudo systemctl restart docker');
+        } else if (error.message.includes('ENOENT')) {
+          logger.error('DOCKER NOT FOUND: Docker socket not available');
+          logger.error('1. Install Docker: https://docs.docker.com/install/');
+          logger.error('2. Start Docker service: sudo systemctl start docker');
+        } else if (error.message.includes('ECONNREFUSED')) {
+          logger.error('DOCKER NOT RUNNING: Docker daemon is not running');
+          logger.error('1. Start Docker: sudo systemctl start docker');
+          logger.error('2. Check status: sudo systemctl status docker');
+        }
+      }
+
+      throw error;
     }
   }
 
@@ -210,9 +236,9 @@ export class SecureDockerExecutor {
           break;
         case 'cpp':
           cmd = [
-            '/bin/sh',
+            'sh',
             '-c',
-            `echo '${escapedCode}' > /app/solution.cpp && echo '${escapedInput}' | timeout ${Math.floor(timeout / 1000)} /app/run.sh`,
+            `echo '${escapedCode}' > /app/solution.cpp && echo '${escapedInput}' > /app/input.txt && /app/run_cpp.sh`,
           ];
           break;
         case 'go':
@@ -313,6 +339,27 @@ export class SecureDockerExecutor {
         error instanceof Error ? error.message : 'Unknown execution error';
       const executionTime = Date.now() - startTime;
 
+      // Enhanced error messages for Docker permission issues
+      let userFriendlyError = errorMessage;
+      if (error instanceof Error) {
+        if (
+          error.message.includes('EACCES') &&
+          error.message.includes('docker.sock')
+        ) {
+          userFriendlyError =
+            'Docker permission denied. Please run "yarn fix:docker" or contact your system administrator.';
+        } else if (error.message.includes('ECONNREFUSED')) {
+          userFriendlyError =
+            'Docker service is not running. Please start Docker and try again.';
+        } else if (
+          error.message.includes('ENOENT') &&
+          error.message.includes('docker.sock')
+        ) {
+          userFriendlyError =
+            'Docker is not installed or not properly configured.';
+        }
+      }
+
       logger.error(
         `Execution error for container ${containerId}: ${errorMessage}`,
         {
@@ -327,7 +374,7 @@ export class SecureDockerExecutor {
       return {
         success: false,
         output: '',
-        error: errorMessage,
+        error: userFriendlyError,
         executionTime,
         memoryUsed: 0,
         containerId,

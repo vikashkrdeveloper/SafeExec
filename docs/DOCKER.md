@@ -234,7 +234,26 @@ yarn ssl:generate
 
 ### Common Issues
 
-1. **Port conflicts**:
+1. **Docker Permission Errors (`EACCES /var/run/docker.sock`)**:
+
+   ```bash
+   # Quick fix using our script
+   yarn fix:docker
+
+   # Manual fix - Add user to docker group
+   sudo usermod -aG docker $USER
+
+   # Set socket permissions
+   sudo chmod 666 /var/run/docker.sock
+
+   # Apply group changes (or logout/login)
+   newgrp docker
+
+   # Restart Docker service if needed
+   sudo systemctl restart docker
+   ```
+
+2. **Port conflicts**:
 
    ```bash
    # Check what's using the port
@@ -245,7 +264,7 @@ yarn ssl:generate
    NGINX_HTTPS_PORT=8443
    ```
 
-2. **SSL certificate errors**:
+3. **SSL certificate errors**:
 
    ```bash
    # Regenerate certificates
@@ -253,7 +272,7 @@ yarn ssl:generate
    yarn ssl:generate
    ```
 
-3. **Database connection issues**:
+4. **Database connection issues**:
 
    ```bash
    # Check database status
@@ -263,7 +282,7 @@ yarn ssl:generate
    docker logs rce-mongodb-dev
    ```
 
-4. **Permission errors**:
+5. **Permission errors**:
 
    ```bash
    # Fix file permissions

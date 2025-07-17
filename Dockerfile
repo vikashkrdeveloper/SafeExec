@@ -17,9 +17,9 @@ RUN apk add --no-cache \
 # Create app directory
 WORKDIR /app
 
-# Create non-root user and add to existing docker group (GID 999)
+# Create nodejs user 
 RUN addgroup -g 1001 -S nodejs && \
-  adduser -S nodejs -u 1001
+  adduser -S nodejs -u 1001 -G nodejs
 
 # Copy package files
 COPY package.json yarn.lock ./

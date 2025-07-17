@@ -225,6 +225,36 @@ yarn restart                # Restart development environment
 yarn reset                  # Complete reset (clean + setup)
 ```
 
+#### 🔧 Common Issues & Solutions
+
+**Docker Permission Errors (`EACCES /var/run/docker.sock`)**:
+
+```bash
+# Quick fix - Run the permission fix script
+yarn fix:docker
+
+# Manual fixes
+sudo usermod -aG docker $USER    # Add user to docker group
+sudo chmod 666 /var/run/docker.sock  # Set socket permissions
+newgrp docker                    # Apply group changes
+```
+
+**Docker Service Issues**:
+
+```bash
+sudo systemctl start docker      # Start Docker service
+sudo systemctl restart docker    # Restart Docker service
+sudo systemctl status docker     # Check Docker status
+```
+
+**Container Build Failures**:
+
+```bash
+yarn docker:clean               # Clean Docker system
+yarn docker:clean:all           # Complete Docker cleanup
+yarn build:executors            # Rebuild executor images
+```
+
 ---
 
 ## 🤝 Contributing to SafeExec
