@@ -1,6 +1,6 @@
 {
   "name": "safe-exec",
-  "version": "1.0.0",
+  "version": "0.0.1a2",
   "description": "A secure, isolated remote code execution backend with Docker containers, JWT authentication, and multi-language support",
   "main": "dist/index.js",
   "license": "MIT",
