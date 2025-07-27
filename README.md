@@ -10,16 +10,16 @@
 
 > **SafeExec** is an enterprise-grade, open-source Remote Code Execution (RCE) platform that enables secure, isolated execution of code in multiple programming languages. Built with security-first architecture, it provides Docker-containerized execution environments, JWT authentication, comprehensive rate limiting, and real-time monitoring.
 
-## 🌟 Why SafeExec?
+## Why SafeExec?
 
-- **🔒 Security First**: Every code execution runs in isolated Docker containers
-- **🌍 Open Source**: Community-driven development and contributions welcome
-- **🔧 Easy Setup**: One-command Docker deployment for all environments
-- **📚 Well Documented**: Comprehensive API docs and contributor guides
-- **🎨 Beautiful API Docs**: Industrial-level Swagger UI with interactive examples
-- **🔄 Hot Reload**: Docker development environment with automatic code reloading
-- **⚡ Multi-Language**: Python, JavaScript, Java, C++, Go support
-- **🚦 Queue System**: Redis-powered job queue for scalable execution
+- **Security First**: Every code execution runs in isolated Docker containers
+- **Open Source**: Community-driven development and contributions welcome
+- **Easy Setup**: One-command Docker deployment for all environments
+- **Well Documented**: Comprehensive API docs and contributor guides
+- **Beautiful API Docs**: Industrial-level Swagger UI with interactive examples
+- **Hot Reload**: Docker development environment with automatic code reloading
+- **Multi-Language**: Python, JavaScript, Java, C++, C#, Go support
+- **Queue System**: Redis-powered job queue for scalable execution
 
 ---
 
@@ -147,7 +147,7 @@ yarn shell
 
 ---
 
-## 📋 Development Workflow for Contributors
+## Development Workflow for Contributors
 
 ### Daily Development
 
@@ -289,11 +289,11 @@ See the [Contributing Guide](CONTRIBUTING.md) for more details.
 
 Your contributions help create a better, more secure code execution platform for developers worldwide.
 
-## 📄 License
+## License
 
 MIT License - see LICENSE file for details
 
-## 🆘 Support
+## Support
 
 For issues and questions:
 
