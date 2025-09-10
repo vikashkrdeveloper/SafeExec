@@ -109,7 +109,7 @@ yarn setup:dev
 
 ```bash
 yarn setup
-# Equivalent to: yarn install && yarn build:executors
+# Equivalent to: yarn install && yarn build:executors 
 ```
 
 #### 4.2. Start Development Environment
