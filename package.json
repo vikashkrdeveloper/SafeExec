@@ -43,6 +43,7 @@
     "clean": "rimraf dist coverage",
     "install:clean": "rm -rf node_modules yarn.lock && yarn install",
     "typecheck": "tsc --noEmit",
+    "security:audit": "yarn audit --level moderate",
     "prepare": "husky install || true",
     "build:executors": "./scripts/build-executors.sh",
     "fix:docker": "./scripts/fix-docker-permissions.sh",
