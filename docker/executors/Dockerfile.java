@@ -1,5 +1,5 @@
-# Java OpenJDK 17 Executor
-FROM openjdk:17-alpine
+# Java Temurin JDK 17 Executor
+FROM eclipse-temurin:17-jdk-alpine
 
 # Security: Create non-root user
 RUN adduser -D -s /bin/sh coderunner
