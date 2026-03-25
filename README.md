@@ -95,6 +95,7 @@ yarn setup:dev
 # - Install all dependencies
 # - Build Docker executor containers
 # - Start development environment with Docker Compose
+# - Auto-shift host ports if default ports are busy (e.g. 27017 -> 27018)
 # - Mount source code for hot-reload (changes auto-reload containers)
 # - Seed database with sample data
 # - Start both API server and worker with live reloading
@@ -253,6 +254,16 @@ sudo systemctl status docker     # Check Docker status
 yarn docker:clean               # Clean Docker system
 yarn docker:clean:all           # Complete Docker cleanup
 yarn build:executors            # Rebuild executor images
+```
+
+**Port Already In Use (`address already in use`)**:
+
+```bash
+# Retry startup; SafeExec now auto-selects next free host ports
+yarn docker:dev
+
+# Example: if 27017 is busy, MongoDB may use 27018
+# The selected ports are printed in startup logs
 ```
 
 ---
