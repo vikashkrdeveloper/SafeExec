@@ -10,5 +10,5 @@
   "*.{json,md,yml,yaml}": ["prettier --write"],
   "src/**/*.{ts,tsx}": ["tsc --noEmit"],
   "tests/**/*.{ts,tsx}": ["tsc --noEmit"],
-  "package.json": ["yarn audit --level moderate"]
+  "package.json": ["sh ./scripts/run-security-audit.sh"]
 }

@@ -1,4 +1,14 @@
 #!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
 
-yarn lint-staged
+set -e
+
+if command -v yarn >/dev/null 2>&1; then
+	yarn lint-staged
+elif command -v pnpm >/dev/null 2>&1; then
+	pnpm lint-staged
+elif command -v npm >/dev/null 2>&1; then
+	npx --no-install lint-staged
+else
+	echo "[husky] No package manager found (yarn/pnpm/npm)."
+	exit 127
+fi
