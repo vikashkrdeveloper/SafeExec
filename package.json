@@ -70,6 +70,8 @@
     "docker:sync": "echo '🔄 Syncing code changes to containers...' && docker compose -f docker-compose.yml restart rce-api rce-worker",
     "docker:rebuild": "echo '🏗️ Rebuilding and restarting containers...' && yarn docker:dev:build && yarn docker:restart",
     "docker:build:all": "yarn docker:dev:build && yarn docker:test:build && yarn docker:prod:build",
+    "docker:push:all": "bash ./scripts/push-dockerhub-images.sh",
+    "docker:push:all:version": "bash ./scripts/push-dockerhub-images.sh ${HUB_USER} ${VERSION}",
     "docker:setup:dev": "echo '🚀 Setting up development environment...' && yarn fix:docker && yarn build:executors && yarn docker:dev:build && yarn docker:dev",
     "docker:setup:test": "yarn build:executors && yarn docker:test:build && yarn docker:test",
     "docker:setup:prod": "yarn build:executors && yarn docker:prod:build && yarn docker:prod",

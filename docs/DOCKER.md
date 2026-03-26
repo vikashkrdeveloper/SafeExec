@@ -82,6 +82,29 @@ yarn docker:build:all        # Build all environment images
 
 ### Testing
 
+### Push Images to Docker Hub
+
+```bash
+# Login first
+docker login
+
+# Push all SafeExec images (api, worker, nginx, executors) using existing local images
+HUB_USER=vikashkrdeveloper VERSION=v0.0.1 yarn docker:push:all
+
+# Or pass explicit args to the script
+bash ./scripts/push-dockerhub-images.sh vikashkrdeveloper v0.0.1
+
+# Optional: rebuild app/nginx/executors before pushing
+REBUILD_IMAGES=1 REBUILD_EXECUTORS=1 HUB_USER=vikashkrdeveloper VERSION=v0.0.1 yarn docker:push:all
+```
+
+The push flow builds and publishes:
+
+- `safeexec-api`
+- `safeexec-worker`
+- `safeexec-nginx`
+- `rce-executor-python`, `rce-executor-nodejs`, `rce-executor-java`, `rce-executor-cpp`, `rce-executor-go`
+
 ```bash
 # Run tests in Docker
 yarn docker:test:run         # Run all tests
